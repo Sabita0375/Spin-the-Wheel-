@@ -1,0 +1,149 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spin the Wheel - Pro Edition</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+<style>
+    body { font-family: 'Poppins', sans-serif; margin: 0; padding: 0; background: #f4f4f4; color: #333; text-align: center; }
+    h1 { margin: 20px; }
+    canvas { margin: 20px auto; display: block; border: 8px solid #444; border-radius: 50%; box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2); }
+    button { padding: 15px 30px; font-size: 18px; margin: 10px; cursor: pointer; transition: 0.3s; }
+    .spin-btn { background: #28a745; color: #fff; border: none; }
+    .spin-btn:hover { background: #218838; }
+    .reset-btn { background: #ff4500; color: #fff; border: none; }
+    .reset-btn:hover { background: #d93400; }
+    input { padding: 10px; width: 60%; margin: 10px; }
+    #result { font-size: 28px; margin: 20px; color: #d9534f; font-weight: bold; }
+    .confetti { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 999; }
+</style>
+</head>
+<body>
+
+<h1>🎡 Spin the Wheel - Pro Edition</h1>
+<canvas id="wheelCanvas" width="500" height="500"></canvas><br>
+<button class="spin-btn" onclick="spinWheel()">🎯 Spin the Wheel</button>
+<button class="reset-btn" onclick="clearOptions()">🗑️ Reset Options</button>
+
+<div id="result"></div>
+
+<input type="text" id="optionInput" placeholder="Add options (comma-separated)">
+<button onclick="updateWheel()">➕ Add Options</button>
+
+<div class="confetti" id="confetti"></div>
+
+<audio id="spinSound" src="https://www.fesliyanstudios.com/play-mp3/387"></audio>
+<audio id="winSound" src="https://www.fesliyanstudios.com/play-mp3/4387"></audio>
+
+<script>
+    const canvas = document.getElementById('wheelCanvas');
+    const ctx = canvas.getContext('2d');
+    let options = JSON.parse(localStorage.getItem('wheelOptions')) || ['Pizza', 'Burger', 'Pasta', 'Fries', 'Ice Cream'];
+    let spinning = false;
+    let angle = 0;
+
+    function drawWheel() {
+        const numOptions = options.length;
+        const sliceAngle = 2 * Math.PI / numOptions;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        for (let i = 0; i < numOptions; i++) {
+            ctx.beginPath();
+            ctx.moveTo(250, 250);
+            ctx.arc(250, 250, 250, sliceAngle * i, sliceAngle * (i + 1));
+            
+            ctx.fillStyle = i % 2 === 0 ? '#FFCC00' : '#FF4500';
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.save();
+            ctx.translate(250, 250);
+            ctx.rotate(sliceAngle * (i + 0.5));
+            ctx.fillStyle = '#fff';
+            ctx.font = '18px Arial';
+            ctx.fillText(options[i], 120, 10);
+            ctx.restore();
+        }
+    }
+
+    function spinWheel() {
+        if (spinning) return;
+        spinning = true;
+
+        let spinAngle = Math.random() * 4000 + 2000;
+        let speed = 25;
+
+        document.getElementById('spinSound').play();
+
+        const spinInterval = setInterval(() => {
+            angle += speed;
+            speed *= 0.98;
+            
+            if (speed < 0.3) {
+                clearInterval(spinInterval);
+                spinning = false;
+                showResult();
+                launchConfetti();
+            }
+
+            ctx.save();
+            ctx.translate(250, 250);
+            ctx.rotate(angle * Math.PI / 180);
+            ctx.translate(-250, -250);
+            drawWheel();
+            ctx.restore();
+        }, 30);
+    }
+
+    function showResult() {
+        const numOptions = options.length;
+        const sliceAngle = 360 / numOptions;
+        const currentAngle = (360 - (angle % 360)) % 360;
+        const selectedIndex = Math.floor(currentAngle / sliceAngle);
+
+        const resultDiv = document.getElementById('result');
+        resultDiv.innerHTML = `🎉 Winner: <b>${options[selectedIndex]}</b>`;
+
+        document.getElementById('winSound').play();
+    }
+
+    function updateWheel() {
+        const input = document.getElementById('optionInput').value;
+        if (input.trim()) {
+            options = input.split(',').map(opt => opt.trim());
+            localStorage.setItem('wheelOptions', JSON.stringify(options));
+            drawWheel();
+        }
+    }
+
+    function clearOptions() {
+        options = ['Pizza', 'Burger', 'Pasta', 'Fries'];
+        localStorage.removeItem('wheelOptions');
+        drawWheel();
+        document.getElementById('result').innerHTML = "";
+    }
+
+    function launchConfetti() {
+        const confetti = document.getElementById('confetti');
+        confetti.innerHTML = "";
+        for (let i = 0; i < 100; i++) {
+            const div = document.createElement('div');
+            div.style.position = 'absolute';
+            div.style.left = `${Math.random() * 100}vw`;
+            div.style.top = `${Math.random() * 100}vh`;
+            div.style.width = '10px';
+            div.style.height = '10px';
+            div.style.background = `hsl(${Math.random() * 360}, 100%, 50%)`;
+            div.style.animation = `fall ${Math.random() * 3 + 2}s linear infinite`;
+            confetti.appendChild(div);
+        }
+    }
+
+    drawWheel();
+</script>
+
+</body>
+</html>
